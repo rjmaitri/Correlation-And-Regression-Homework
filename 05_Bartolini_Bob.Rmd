@@ -1,0 +1,228 @@
+---
+output: 
+  html_document: 
+    df_print: kable
+    theme: cerulean
+---
+  
+<div align="center">
+ <marquee behavior="alternate" bgcolor="#bb3434" direction="left" height:="" 
+ loop="7" scrollamount="1" scrolldelay="2" width="100%">
+ <span style="font-size: 20px;color:#FFFFFF">
+ Correlation and Regression!</span></marquee>
+</div>
+
+---
+title: "Homework 5"
+author: "Bob Bartolini"
+date: "10//2020"
+output: html_document
+  
+
+---
+
+https://github.com/rjmaitri/Homework-2.git
+
+```{r setup, include=FALSE}
+#scrolling code output
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE
+)
+options(width = 60)
+local({
+  hook_output <- knitr::knit_hooks$get('output')
+  knitr::knit_hooks$set(output = function(x, options) {
+    if (!is.null(options$max.height)) options$attr.output <- c(
+      options$attr.output,
+      sprintf('style="max-height: %s;"', options$max.height)
+    )
+    hook_output(x, options)
+  })
+})
+```
+
+```{r}
+library(readr)
+library(reactable)
+library(ggplot2)
+
+
+```
+
+Note: Datasets are available at http://whitlockschluter.zoology.ubc.ca/data so you don’t have to type anything in (and have to load it!)
+
+### 1. Correlation - W&S Chapter 16
+Data at https://whitlockschluter.zoology.ubc.ca/wp-content/data/chapter16/chap16q15LanguageGreyMatter.csv 
+
+## 1. Does learning a second language change brain structure? Mechelli tested 22 native Italian speakers who had learned English as a second language. Procifiencies in reading, writing, and speech were assesed using a number of tests whose results were summarized by a proficiency score. Gray-matter density was measured in the left inferior parietal region of the brain using a neuroimaging technique, as mm3 of gray matter per voxel. (A voxel is a picture element, or "pixel", in three dimensions.) The data are listed in the accompanying table. 
+
+
+```{r}
+grey_proficiency <- read.csv("./data/chap16q15LanguageGreyMatter.csv")
+
+str(grey_proficiency)
+
+```
+
+```{r}
+skimr::skim(grey_proficiency)
+
+
+```
+
+## 1a. Display the association between the two variables in a scatter plot
+
+```{r}
+
+
+ggplot(data = grey_proficiency,
+       mapping = aes(x = proficiency, y = greymatter)) +
+  geom_point()+
+  theme_bw()
+
+```
+
+<span style="color: green;"> The greymatter density increases with second language proficiency. </span>
+
+##1b. Calculate the correlation between second language procifiency and grey-matter density
+
+```{r}
+cor(grey_proficiency)
+
+```
+
+<span style="color: green;"> This correlation plot depicts the degree of association between grey-matter density and second language proficiency. We see that the covariance is 0.81.</span>
+
+## 1c. Test the Null Hypothesis of zero correlation.
+
+```{r}
+
+density_lm <- lm(greymatter ~ proficiency, data = grey_proficiency)
+
+summary(density_lm)
+```
+
+<span style="color: green;">We fail to accept the null hypothesis of zero correlation, as the p-value is 3.264e-06, which is less than our alpha of 0.05</span>
+
+### 2. Correlation - W&S Chapter 16
+Data at https://whitlockschluter.zoology.ubc.ca/wp-content/data/chapter16/chap16q19LiverPreparation.csv
+
+## The following data are from a laboratory experiment by Smallwood et al. (1998) in which liver preparations from five rats were used to measure the relationship between the administered concentration of taurocholate (a salt normally occuring in liver bile) and the unbound fraction of taurocholate in the liver.
+
+## 2a. Calculate the correlation between the taurocholate unbound fraction and the concentration.
+
+```{r}
+liver_data <- read.csv("data/chap16q19LiverPreparation.csv")
+
+str(liver_data)
+
+```
+
+
+
+```{r}
+cor(liver_data)
+
+
+```
+
+<span style="color: green;">The covariance of -0.85 indicates a correlation between concentration and unbound fraction of taurocholate.
+
+## 2b. 
+
+```{r}
+
+ggplot(data = liver_data,
+       mapping = aes(x = concentration, y = unboundFraction)) +
+  geom_point()+
+  theme_bw()
+
+
+```
+
+## 2c. Examine the plot in part (b). The relationship appears to be maximally strong, yet the correlation coefficient you calculated in part (a) is not near the maximum possible value. 
+Why not?
+
+<span style="color: green;"> LOOK INTO THE TEXT </span>
+
+## 2d. What steps would you take with these data to meet the assumptions of correlation analysis?
+
+
+3. Correlation SE
+Consider the following dataset:
+
+cats	happiness_score
+-0.30	-0.57
+0.42	-0.10
+0.85	-0.04
+-0.45	-0.29
+0.22	0.42
+-0.12	-0.92
+1.46	0.99
+-0.79	-0.62
+0.40	1.14
+-0.07	0.33
+
+
+
+3a.
+Are these two variables correlated? What is the output of cor() here. What does a test show you?
+
+
+
+3b.
+What is the SE of the correlation based on the info from cor.test()
+
+3c.
+Now, what is the SE via simulation? To do this, you’ll need to use cor() and get the relevant parameter from the output (remember - you get a matrix back, so, what’s the right index!), replicate(), and sample() or dplyr::sample_n() with replace=TRUE to get, let’s say, 1000 correlations. How does this compare to your value above?
+
+## [1] 0.1608964
+4. W&S Chapter 17
+Data at https://whitlockschluter.zoology.ubc.ca/wp-content/data/chapter17/chap17q19GrasslandNutrientsPlantSpecies.csv
+
+
+
+5. W&S Chapter 17-25
+https://whitlockschluter.zoology.ubc.ca/wp-content/data/chapter17/chap17q25BeetleWingsAndHorns.csv 
+
+
+
+Do any other diagnostics misbehave?
+6. W&S Chapter 17-30
+https://whitlockschluter.zoology.ubc.ca/wp-content/data/chapter17/chap17q30NuclearTeeth.csv 
+
+Using predict() and geom_ribbon() in ggplot2, reproduce the above plot showing data, fit, fit interval, and prediction interval.
+EC. Intervals and simulation
+Fit the deet and bites model from lab.
+
+
+
+Now, look at vcov() applied to your fit. For example:
+
+deet_mod <- lm(bites ~ dose, data = deet)
+
+vcov(deet_mod)
+##             (Intercept)         dose
+## (Intercept)  0.09929780 -0.025986850
+## dose        -0.02598685  0.007437073
+What you have here is the variance-covariance matrix of the parameters of the model. In essence, every time you larger slopes in this case will have smaller intercepts, and vice-verse. This maintains the best fit possible, despite deviations in the slope and intercept. BUT - what’s cool about this is that it also allows us to produce simulations (posterior simulations for anyone interested) of the fit. We can use a package like mnormt that let’s us draw from a multivariate normal distribution when provided with a vcov matrix. For example…
+
+library(mnormt)
+
+rmnorm(4, mean = coef(deet_mod), varcov = vcov(deet_mod))
+##      (Intercept)       dose
+## [1,]    3.541639 -0.3524774
+## [2,]    4.061716 -0.5296708
+## [3,]    4.010105 -0.4772817
+## [4,]    4.112800 -0.4790570
+produces a number of draws of the variance and the covariance!
+
+ECa. Fit simulations!
+Using geom_abline() make a plot that has the following layers and shows that these simulated lines match up well with the fit CI. 1) the data, 2) the lm fit with a CI, and 3) simulated lines. You might have to much around to make it look as good as possible.
+
+ECb. Prediction simulations!
+That’s all well and good, but what about the prediction intervals? To each line, we can add some error drawn from the residual standard deviation. That residual can either be extracted from summary() or you can get the sd of residuals.
+
+Now, visualize the simulated prediction interval around the fit versus the calculated prediction interval around the fit via predict. +1 extra credit for a clever visualization of all elements on one figure - however you would like
