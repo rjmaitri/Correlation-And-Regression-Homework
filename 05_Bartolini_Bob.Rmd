@@ -60,13 +60,16 @@ Data at https://whitlockschluter.zoology.ubc.ca/wp-content/data/chapter16/chap16
 
 
 ```{r}
+#load the data
 grey_proficiency <- read.csv("./data/chap16q15LanguageGreyMatter.csv")
-
+#check the structure of the data
 str(grey_proficiency)
 
 ```
 
 ```{r}
+
+
 skimr::skim(grey_proficiency)
 
 
@@ -76,10 +79,11 @@ skimr::skim(grey_proficiency)
 
 ```{r}
 
-
+#plot grey matter by proficiency
 ggplot(data = grey_proficiency,
        mapping = aes(x = proficiency, y = greymatter)) +
   geom_point()+
+  stat_smooth(method =lm)+
   theme_bw()
 
 ```
@@ -89,6 +93,7 @@ ggplot(data = grey_proficiency,
 ##1b. Calculate the correlation between second language procifiency and grey-matter density
 
 ```{r}
+#output the correlation matrix of this data
 cor(grey_proficiency)
 
 ```
@@ -98,7 +103,7 @@ cor(grey_proficiency)
 ## 1c. Test the Null Hypothesis of zero correlation.
 
 ```{r}
-
+#fit the density-grey matter model
 density_lm <- lm(greymatter ~ proficiency, data = grey_proficiency)
 
 summary(density_lm)
@@ -114,44 +119,171 @@ Data at https://whitlockschluter.zoology.ubc.ca/wp-content/data/chapter16/chap16
 ## 2a. Calculate the correlation between the taurocholate unbound fraction and the concentration.
 
 ```{r}
+#load the data
 liver_data <- read.csv("data/chap16q19LiverPreparation.csv")
-
+#check the structure
 str(liver_data)
 
+
+
 ```
+
+<span style="color: green;">This dataset displays the relationship between administered taurochlorate concentration and the fraction of unbound tuarocholorate in the liver.</span>
+
 
 
 
 ```{r}
+
+skimr::skim(liver_data)
+
+```
+
+```{r}
+#correlation matrix for liver_data
 cor(liver_data)
 
 
 ```
 
-<span style="color: green;">The covariance of -0.85 indicates a correlation between concentration and unbound fraction of taurocholate.
+<span style="color: green;">The covariance of -0.85 indicates a strong negative correlation between the increasing concentration alongside a decreasing unbound fraction of taurocholate. The negative value indicates the direction of the effect concentration has on the unbound fraction.</span>
 
-## 2b. 
+## 2b. Plot the relationship between the two variables in a graph.
 
 ```{r}
 
 ggplot(data = liver_data,
        mapping = aes(x = concentration, y = unboundFraction)) +
   geom_point()+
+  stat_smooth(method=lm)+
   theme_bw()
 
 
 ```
 
+
+#### Log-transformation of the unbound fraction might be useful for linearity.
+
+```{r}
+
+
+ggplot(data = liver_data,
+       mapping = aes(x = concentration, y = log(unboundFraction))) +
+  geom_point()+
+  stat_smooth(method =lm)+
+  theme_bw()
+
+
+
+
+```
+
+<span style="color: green;">Residuals appear to have shrunk"</span>
+
+
 ## 2c. Examine the plot in part (b). The relationship appears to be maximally strong, yet the correlation coefficient you calculated in part (a) is not near the maximum possible value. 
 Why not?
 
-<span style="color: green;"> LOOK INTO THE TEXT </span>
+<span style="color: green;">The negative correlation coefficient approaches the minimum, since it has an increasing and decreasing variables. The correlation coefficient would approach the maximum if both variables were positive. </span>
 
 ## 2d. What steps would you take with these data to meet the assumptions of correlation analysis?
 
+```{r}
+#fit the unboundfraction_taurochlorate model
+liver_lm <- lm(log(unboundFraction) ~ concentration, data = liver_data)
 
-3. Correlation SE
-Consider the following dataset:
+summary(liver_lm)
+
+```
+
+```{r}
+
+
+coef(liver_lm)
+
+```
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+
+#use the fit model to test our data
+
+#does the distribution of our predictions match our data?
+
+unbound_sims <- simulate(liver_lm, nsim = 20) %>%
+  pivot_longer(
+    cols = everything(),
+    names_to = "sim",
+    values_to = "unboundFraction"
+  )
+
+#look if our predictions match the data
+ggplot() +
+  #layer the sims
+  geom_density(data = unbound_sims, 
+               mapping = aes(x = unboundFraction, group = sim), size =  0.2) +
+  #layer the data 
+   geom_density(data = liver_data, 
+               mapping = aes(x = unboundFraction), size =  0.2, color = "blue")
+
+```
+
+<span style="color: green;">Our simulations has some predictions which do not match our data. The small sample size appears to be an issue. Also, the quantities appear to be in different scales.</span>
+
+
+
+#is there a relationship between fitted and residual values
+
+```{r}
+#plot fitted vs. residual of the unbound fraction model
+plot(liver_lm, which =1)
+
+```
+
+<span style="color: green;">The taurocholate data does not have a pattern for the residuals vs. fitted values, however, the small sample size does not give us any information for the scatter of the residual values. This plot would be more useful with replicate experiments.</span>
+
+
+
+#### Did we satisfy normality and homoskedascity using a ggplot and levene test
+
+```{r}
+
+#Generate a QQplot
+plot(liver_lm, which =2)
+
+```
+
+<span style="color: green;">The error generating process contains a normal distribution, as the residuals trend along a straight line</span>
+
+#### Look for outliers with leverage. 
+
+```{r}
+
+#plot cooks distance to scan for outliers
+
+plot(liver_lm, which =4)
+
+
+```
+
+<span style="color: green;">Rat #5 has contains an outlier, as it contains a Cook's distance over 1. </span>
+
+```{r}
+plot(liver_lm, which = 5)
+
+```
+
+<span style="color: green;">Rat samples 1 and 5 have a considerable amount of leverage</span>
+
+<span style="color: green;">These tests of assumptions contain some minor failures, however replicate experiments should be conducted before reconstructing the model. If further data fails these tests, the taurocholate administration v. unbound fraction model may need to be revised based on these diagnostic tests of assumptions. More predictors, such as proteins relevant to unbound taurocholate may need to be investigated and incorporated to the model. </span>
+
+
+#### 3. Correlation SE
+#### Consider the following dataset:
+
+
 
 cats	happiness_score
 -0.30	-0.57
@@ -165,20 +297,60 @@ cats	happiness_score
 0.40	1.14
 -0.07	0.33
 
+```{r}
+
+cats <- c(-0.30,0.42,0.85,-0.45,0.22,-0.12,1.46,-0.79,0.40,-0.07)
+
+happiness_score <- c(-0.57,-0.10,-0.04,-0.29,0.42,-0.92,0.99,-0.62,1.14,0.33)
+
+cats_happiness <- data.frame(cats, happiness_score)
+
+```
 
 
-3a.
-Are these two variables correlated? What is the output of cor() here. What does a test show you?
+#### 3a. Are these two variables correlated? What is the output of cor() here. What does a test show you?
 
 
+```{r}
+cor(cats_happiness)
 
-3b.
-What is the SE of the correlation based on the info from cor.test()
+```
 
-3c.
+
+#### 3b. What is the SE of the correlation based on the info from cor.test()
+
+```{r}
+
+cor.test(cats_happiness$cats, cats_happiness$happiness_score)
+
+```
+
+<span style="color: green;">t = r/SE</span>
+
+<span style="color: green;">r = 0.6758, t = 2.5938</span>
+
+<span style="color: green;">2.5938 = 0.6758/SE</span>
+
+<span style="color: green;">2.5938SE=0.6758</span>
+
+<span style="color: green;">SE=0.6758/2.5938</span>
+
+<span style="color: green;">SE=0.26</span>
+
+<span style="color: green;">The standard error is *0.26*</span>
+
+
+#### 3c.
 Now, what is the SE via simulation? To do this, you’ll need to use cor() and get the relevant parameter from the output (remember - you get a matrix back, so, what’s the right index!), replicate(), and sample() or dplyr::sample_n() with replace=TRUE to get, let’s say, 1000 correlations. How does this compare to your value above?
 
+```{r}
+
+
+
+```
+
 ## [1] 0.1608964
+
 4. W&S Chapter 17
 Data at https://whitlockschluter.zoology.ubc.ca/wp-content/data/chapter17/chap17q19GrasslandNutrientsPlantSpecies.csv
 
