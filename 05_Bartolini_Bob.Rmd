@@ -381,9 +381,8 @@ a) Draw the scatter plot of these data. Which variable should be the explanatory
 ```{r}
 ggplot(data = plant_nutrient,
        mapping = aes(x = Nutrients, y = Species)) +
-  geom_point()+
-  stat_smooth(method =lm)+
-  theme_bw()
+  geom_point(colour = "yellow", size =2)+
+  theme_dark()
 
 ```
 
@@ -410,7 +409,23 @@ cor_plants
 
 <span style="color: green;">Calculate standard error of the slope using the formula SE=slope/t gives `r -3.339/-3.0398` </span>
 
+#### 4c. Add the least-squares regression to your scatter plot. What fraction of the variation in the number of plant species is "explained" by the number of nutrients added?
 
+```{r}
+
+ggplot(data = plant_nutrient,
+       mapping = aes(x = Nutrients, y = Species)) +
+  geom_point(colour = "yellow", size =2)+
+  stat_smooth(method =lm, fill="pink", colour="green", size=1)+
+  theme_dark()
+
+```
+
+<span style="color: green;">The coefficient of determination, r<sup>2</sup> = `r summary(Species_nutrients_mod)$r.squared`</span>
+
+#### 4d. Test the null hypothesis, that no treatment effect on the number of plant species.
+
+<span style="color: green;">We fail to accept the null hypothesis (p:value = `r cor_plants$p.value`) that there is no treatment effect on the number of plant species.</span>
 
 5. W&S Chapter 17-25
 https://whitlockschluter.zoology.ubc.ca/wp-content/data/chapter17/chap17q25BeetleWingsAndHorns.csv 
