@@ -139,6 +139,8 @@ skimr::skim(liver_data)
 
 ```
 
+<span style="color: green;">The histograms don't show a normal distribution which infers transformation may be needed.</span>
+
 ```{r}
 #correlation matrix for liver_data
 cor(liver_data)
@@ -162,16 +164,16 @@ ggplot(data = liver_data,
 ```
 
 
-#### Log-transformation of the unbound fraction might be useful for linearity.
+#### Arcsine of the unbound fraction might be useful for linearity.
 
 ```{r}
 
 
 ggplot(data = liver_data,
-       mapping = aes(x = concentration, y = log(unboundFraction))) +
-  geom_point()+
-  stat_smooth(method =lm)+
-  theme_bw()
+       mapping = aes(x = concentration, y = asin(unboundFraction))) +
+  geom_point(colour = "Orange")+
+  stat_smooth(method =lm, fill = "lightblue", colour = "brown")+
+  theme_dark()
 
 
 
@@ -193,7 +195,7 @@ Why not?
 ####arcsine for fraction
 
 #fit the unboundfraction_taurochlorate model
-liver_lm <- lm((unboundFraction) ~ concentration, data = liver_data)
+liver_lm <- lm(asin(unboundFraction) ~ concentration, data = liver_data)
 
 summary(liver_lm)
 
@@ -229,7 +231,7 @@ ggplot() +
                mapping = aes(x = unboundFraction, group = sim), size =  0.2) +
   #layer the data 
    geom_density(data = liver_data, 
-               mapping = aes(x = unboundFraction), size =  0.2, color = "blue")
+               mapping = aes(x = unboundFraction), size =  0.7, color = "red")
 
 ```
 
@@ -421,7 +423,7 @@ ggplot(data = plant_nutrient,
 
 ```
 
-<span style="color: green;">The coefficient of determination, r<sup>2</sup> = `r summary(Species_nutrients_mod)$r.squared`</span>
+<span style="color: green;">The fraction of variation in the number of species related to number of nutrients is r<sup>2</sup> = `r summary(Species_nutrients_mod)$r.squared`</span>
 
 #### 4d. Test the null hypothesis, that no treatment effect on the number of plant species.
 
@@ -430,42 +432,215 @@ ggplot(data = plant_nutrient,
 5. W&S Chapter 17-25
 https://whitlockschluter.zoology.ubc.ca/wp-content/data/chapter17/chap17q25BeetleWingsAndHorns.csv 
 
+#### 5. Many species of beetle produce large horns that are used as weapons or shields. The resources require to build these horns, though, might be diverted from other useful structures. To test this, Emlen (2001) measured the sizes of wings and horns in 19 females of beetle species, Onthopagus Saggitarius. Both traits were scaled for body-size differences and hence are referred to as relative horn and wing sizes. Emlen's data are shown in the following scatter plot along with the least squares regression line (Y = -0.13 - 132.6X)
+
+#### We used this regression line to predict horn lengths at each of the 19 observed horn sizes. These are given in the following table along with the raw data. 
+
+```{r}
+#load beetle data
+beetle_df <- read.csv("data/chap17q25BeetleWingsAndHorns.csv")
+#check the structure
+str(beetle_df)
 
 
-Do any other diagnostics misbehave?
-6. W&S Chapter 17-30
+```
+
+```{r}
+
+skimr::skim(beetle_df)
+
+```
+
+```{r}
+ggplot(data = beetle_df,
+       mapping = aes(x = wingMass, y = hornSize)) +
+  geom_point(colour = "yellow", size =2, shape = 1)+
+  stat_smooth(method =lm, fill="pink", colour="blue", size=1)+
+  theme_dark()
+
+
+```
+
+#### 4a. Use these results to calculate the residuals.
+
+```{r}
+
+beetle_lm <- lm(hornSize ~ wingMass, data = beetle_df)
+
+hist(residuals(beetle_lm))
+
+```
+
+#### 4b. Use your resutls form part (a) to produce the residual plot.
+
+```{r}
+#But wait, theres more ####
+
+library(modelr)
+
+beetlemania <- beetle_df %>%
+  add_residuals(beetle_lm)
+
+head(beetlemania)
+
+```
+
+
+
+```{r}
+
+qplot(wingMass, resid, data=beetlemania) +
+  stat_smooth(method = lm)
+
+```
+
+
+#### 4c. Use the graph provided and your residual plot to evaluate the main assumptions of linear regression.
+
+<span style="color: green;">I'll add a smooth line analyze the linearity of the hornSize ~ bodymass relationship
+
+```{r}
+ggplot(data = beetle_df,
+       mapping = aes(x = wingMass, y = hornSize)) +
+  geom_point(colour = "yellow", size =2, shape = 1)+
+  stat_smooth(fill="pink", colour="blue", size=1)+
+  theme_dark()
+
+
+```
+
+<span style="color: green;">This demonstrates that the data has non-linear relationship. The residual plot also has some datapoints that infer non-normality and unequal variance.</span>
+
+
+
+#### 4d. In light of your conclusions in part C, what steps should be taken?
+<span style="color: green;">The data here forms a relationship, however, it is not the strongest. This model can be validated by increasing the sample size to reduce the deviation of horn size. Measurement methods may also be a factor in the non-linearity."
+
+#### 4e. Do any other diagnostics misbehave?
+
+```{r}
+plot(beetle_lm, which = 1)
+
+```
+
+<span style="color: green;">The residuals vs. fitted aren't a nice cloud shape
+
+####6. W&S Chapter 17-30
 https://whitlockschluter.zoology.ubc.ca/wp-content/data/chapter17/chap17q30NuclearTeeth.csv 
 
-Using predict() and geom_ribbon() in ggplot2, reproduce the above plot showing data, fit, fit interval, and prediction interval.
-EC. Intervals and simulation
-Fit the deet and bites model from lab.
+```{r}
+# load data from the web this time!
+
+nuclear_teeth <- read.csv("https://whitlockschluter.zoology.ubc.ca/wp-content/data/chapter17/chap17q30NuclearTeeth.csv ")
+
+str(nuclear_teeth)
+
+
+```
+
+```{r}
+
+skimr::skim(nuclear_teeth)
+
+```
 
 
 
-Now, look at vcov() applied to your fit. For example:
+####Calculating the year of birth of cadavers is a tricky enterprise. One method proposed is based on the radioactivity of the enamel of the body's teeth. The proportion of the radioisotope <sup>14</sup>C in the atmosphere increased dramatically during the era of above ground nuclear bomb testing between 1955 and 1963. Given that the enamel of a tooth is a non-regenerating , measuring the <sup>14</sup>C content of a tooth tells when the tooth developed, and therefore the year of birth of its owner. Predictions based on this method seem quite accurate, as shown in the accompanying graph. he x-axis  A<sup>14</sup>C, which measures the amount of <sup>14</sup>C relative to a standard (as a percentage).
 
-deet_mod <- lm(bites ~ dose, data = deet)
+####There are three sets of lines on this graph. The solid line represent the least-squares regression line, prediciting the actual year of birth from the estimate based on amount of <sup>14</sup>C. One pair of dashed lines shows the 95% confidence bands and the other shows the 95% prediction interval.
 
-vcov(deet_mod)
-##             (Intercept)         dose
-## (Intercept)  0.09929780 -0.025986850
-## dose        -0.02598685  0.007437073
-What you have here is the variance-covariance matrix of the parameters of the model. In essence, every time you larger slopes in this case will have smaller intercepts, and vice-verse. This maintains the best fit possible, despite deviations in the slope and intercept. BUT - what’s cool about this is that it also allows us to produce simulations (posterior simulations for anyone interested) of the fit. We can use a package like mnormt that let’s us draw from a multivariate normal distribution when provided with a vcov matrix. For example…
 
-library(mnormt)
 
-rmnorm(4, mean = coef(deet_mod), varcov = vcov(deet_mod))
-##      (Intercept)       dose
-## [1,]    3.541639 -0.3524774
-## [2,]    4.061716 -0.5296708
-## [3,]    4.010105 -0.4772817
-## [4,]    4.112800 -0.4790570
-produces a number of draws of the variance and the covariance!
 
-ECa. Fit simulations!
-Using geom_abline() make a plot that has the following layers and shows that these simulated lines match up well with the fit CI. 1) the data, 2) the lm fit with a CI, and 3) simulated lines. You might have to much around to make it look as good as possible.
 
-ECb. Prediction simulations!
-That’s all well and good, but what about the prediction intervals? To each line, we can add some error drawn from the residual standard deviation. That residual can either be extracted from summary() or you can get the sd of residuals.
 
-Now, visualize the simulated prediction interval around the fit versus the calculated prediction interval around the fit via predict. +1 extra credit for a clever visualization of all elements on one figure - however you would like
+
+
+
+#### 4d. Using predict() and geom_ribbon() in ggplot2, reproduce the above plot showing data, fit, fit interval, and prediction interval.
+
+
+
+```{r}
+library(janitor)
+#fit a model
+
+teeth_lm <- lm(deltaC14 ~ dateOfBirth, data = nuclear_teeth)
+
+summary(teeth_lm)
+```
+
+#### 4a. What is the approximate slope of the regression line?
+
+<span style="color: green;">The slope of the regression line is -16.71.</span>
+
+#### 4b. Which pair of lines shows the confidence bands? What do these confidence bands tell us?
+
+```{r}
+#generate upper and lower confidence interval
+fit_teeth <- predict(teeth_lm, 
+                     interval = "confidence") %>%
+#put CI into tibble
+  as_tibble() %>%
+  rename(lwr_ci = lwr,
+         upr_ci = upr)
+#bind columns with df
+nuclear_teeth <- cbind(nuclear_teeth, fit_teeth)
+
+
+
+#create a plot
+ggplot(nuclear_teeth,
+       aes(x = dateOfBirth, 
+           ymin = lwr_ci, 
+           ymax = upr_ci,
+           y = fit)) +
+  geom_ribbon(fill = "orange") +
+  geom_line(color = "blue")+
+  theme_dark()
+```
+
+
+<span style="color: green;">The confidence interval is shown in orange. These lines show the predicted mean-Y for a given X and a re useful for predicting the general trend of a linear model. These bands will bracket the regression line for 95% of the samples.</span>
+
+#### 4c. What pair of lines show the prediction interval? What do these confidence interval bands tell us?
+
+#### 4d. Using predict() and geom_ribbon() in ggplot2, reproduce the above plot showing data, fit, fit interval, and prediction interval.
+
+
+```{r}
+# Predicition Interval
+predict_teeth <- predict(teeth_lm,
+                         interval = "prediction") %>%
+  as_tibble() %>%
+  rename(lwr_pi = lwr,
+         upr_pi = upr)
+
+nuclear_teeth <- cbind(nuclear_teeth, predict_teeth) 
+# fix the names 
+
+nuclear_teeth <- janitor::clean_names(nuclear_teeth)
+
+
+
+ggplot(data = nuclear_teeth,
+       mapping = aes(x = date_of_birth,
+                     y = delta_c14)) +
+  geom_point(fill = "white")+
+  #prediction interval
+  geom_ribbon(mapping = aes(ymin = lwr_pi,
+                            ymax = upr_pi),
+              fill = "green",
+              alpha = 0.5) +
+  # fit interval - just coefficient error (precision)
+  geom_ribbon(mapping = aes(ymin = lwr_ci,
+                            ymax = upr_ci),
+              fill = "orange",
+              alpha = 0.5)+
+  stat_smooth(method=lm)+
+  theme_dark()
+```
+
+<span style="color: green;">The green band represents the prediction interval which represents the upper and lower limits for a single-Y over any given X. These are wider than confidence intervals because they account for the variability in the dependent variable across all values of a independent variable.</span>
+
