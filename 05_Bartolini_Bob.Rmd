@@ -21,7 +21,7 @@ output: html_document
 
 ---
 
-https://github.com/rjmaitri/Homework-2.git
+https://github.com/rjmaitri/Correlation-And-Regression-Homework.git
 
 ```{r setup, include=FALSE}
 #scrolling code output
@@ -46,6 +46,9 @@ local({
 ```{r}
 library(readr)
 library(reactable)
+library(broom)
+library(dplyr)
+library(tidyr)
 library(ggplot2)
 
 
@@ -53,14 +56,14 @@ library(ggplot2)
 
 Note: Datasets are available at http://whitlockschluter.zoology.ubc.ca/data so you don’t have to type anything in (and have to load it!)
 
-### 1. Correlation - W&S Chapter 16
+#### 1. Correlation - W&S Chapter 16
 Data at https://whitlockschluter.zoology.ubc.ca/wp-content/data/chapter16/chap16q15LanguageGreyMatter.csv 
 
-## 1. Does learning a second language change brain structure? Mechelli tested 22 native Italian speakers who had learned English as a second language. Procifiencies in reading, writing, and speech were assesed using a number of tests whose results were summarized by a proficiency score. Gray-matter density was measured in the left inferior parietal region of the brain using a neuroimaging technique, as mm3 of gray matter per voxel. (A voxel is a picture element, or "pixel", in three dimensions.) The data are listed in the accompanying table. 
+#### 1. Does learning a second language change brain structure? Mechelli tested 22 native Italian speakers who had learned English as a second language. Procifiencies in reading, writing, and speech were assesed using a number of tests whose results were summarized by a proficiency score. Gray-matter density was measured in the left inferior parietal region of the brain using a neuroimaging technique, as mm3 of gray matter per voxel. (A voxel is a picture element, or "pixel", in three dimensions.) The data are listed in the accompanying table. 
 
 
 ```{r}
-#load the data
+#load the data (social coding note: I learned how to load directly from the web (last file in this HW is read.csv("web-link") but this code chunk works so I didn't fix it)
 grey_proficiency <- read.csv("./data/chap16q15LanguageGreyMatter.csv")
 #check the structure of the data
 str(grey_proficiency)
@@ -75,7 +78,7 @@ skimr::skim(grey_proficiency)
 
 ```
 
-## 1a. Display the association between the two variables in a scatter plot
+#### 1a. Display the association between the two variables in a scatter plot
 
 ```{r}
 
@@ -90,7 +93,7 @@ ggplot(data = grey_proficiency,
 
 <span style="color: green;"> The greymatter density increases with second language proficiency. </span>
 
-##1b. Calculate the correlation between second language procifiency and grey-matter density
+#### 1b. Calculate the correlation between second language procifiency and grey-matter density
 
 ```{r}
 #output the correlation matrix of this data
@@ -100,23 +103,28 @@ cor(grey_proficiency)
 
 <span style="color: green;"> This correlation plot depicts the degree of association between grey-matter density and second language proficiency. We see that the covariance is 0.81.</span>
 
-## 1c. Test the Null Hypothesis of zero correlation.
+#### 1c. Test the Null Hypothesis of zero correlation.
 
 ```{r}
 #fit the density-grey matter model
 density_lm <- lm(greymatter ~ proficiency, data = grey_proficiency)
 
-summary(density_lm)
+#extract the f_stat and P-value:
+anova(density_lm) %>%
+  tidy()
+
 ```
 
 <span style="color: green;">We fail to accept the null hypothesis of zero correlation, as the p-value is 3.264e-06, which is less than our alpha of 0.05</span>
 
-### 2. Correlation - W&S Chapter 16
+
+
+#### 2. Correlation - W&S Chapter 16
 Data at https://whitlockschluter.zoology.ubc.ca/wp-content/data/chapter16/chap16q19LiverPreparation.csv
 
-## The following data are from a laboratory experiment by Smallwood et al. (1998) in which liver preparations from five rats were used to measure the relationship between the administered concentration of taurocholate (a salt normally occuring in liver bile) and the unbound fraction of taurocholate in the liver.
+#### The following data are from a laboratory experiment by Smallwood et al. (1998) in which liver preparations from five rats were used to measure the relationship between the administered concentration of taurocholate (a salt normally occuring in liver bile) and the unbound fraction of taurocholate in the liver.
 
-## 2a. Calculate the correlation between the taurocholate unbound fraction and the concentration.
+#### 2a. Calculate the correlation between the taurocholate unbound fraction and the concentration.
 
 ```{r}
 #load the data
@@ -164,23 +172,7 @@ ggplot(data = liver_data,
 ```
 
 
-#### Arcsine of the unbound fraction might be useful for linearity.
-
-```{r}
-
-
-ggplot(data = liver_data,
-       mapping = aes(x = concentration, y = asin(unboundFraction))) +
-  geom_point(colour = "Orange")+
-  stat_smooth(method =lm, fill = "lightblue", colour = "brown")+
-  theme_dark()
-
-
-
-
-```
-
-<span style="color: green;">Residuals appear to have shrunk"</span>
+<span style="color: green;">Residuals have shrunk, log transformation has improved the fit of our model"</span>
 
 
 ## 2c. Examine the plot in part (b). The relationship appears to be maximally strong, yet the correlation coefficient you calculated in part (a) is not near the maximum possible value. 
@@ -192,14 +184,16 @@ Why not?
 
 ```{r}
 
-####arcsine for fraction
+
 
 #fit the unboundfraction_taurochlorate model
-liver_lm <- lm(asin(unboundFraction) ~ concentration, data = liver_data)
+liver_lm <- lm(unboundFraction ~ concentration, data = liver_data)
 
 summary(liver_lm)
 
 ```
+
+<span style="color: green;">P-value is greater than 0.05, however, this may shrink with a bigger sample size.</span>
 
 ```{r}
 
@@ -209,9 +203,7 @@ coef(liver_lm)
 ```
 
 ```{r}
-library(dplyr)
-library(tidyr)
-library(ggplot2)
+
 
 #use the fit model to test our data
 
@@ -235,7 +227,7 @@ ggplot() +
 
 ```
 
-<span style="color: green;">Our simulations has some predictions which do not match our data. The small sample size appears to be an issue. Also, the quantities appear to be in different scales.</span>
+<span style="color: green;">Our simulations has some predictions which do not match our data. The small sample size appears to be an issue again. Also, the quantities appear to be in different scales.</span>
 
 
 
@@ -273,7 +265,7 @@ plot(liver_lm, which =4)
 
 ```
 
-<span style="color: green;">Rat #5 has contains an outlier, as it contains a Cook's distance over 1. </span>
+<span style="color: green;">Rat #5 is an outlier, as it contains a Cook's distance over 1. </span>
 
 ```{r}
 plot(liver_lm, which = 5)
@@ -376,7 +368,7 @@ plant_nutrient <- data.frame(plot, Nutrients, Species)
 
 ```
 
-a) Draw the scatter plot of these data. Which variable should be the explanatory variable (X), and which should be the response variable (Y)?
+#### 4a. Draw the scatter plot of these data. Which variable should be the explanatory variable (X), and which should be the response variable (Y)?
 
 <span style="color: green;">The number of plant species is the response variable (Y) and the explanatory variable is the number nutrients added (X)
 
@@ -523,7 +515,7 @@ plot(beetle_lm, which = 1)
 
 ```
 
-<span style="color: green;">The residuals vs. fitted aren't a nice cloud shape
+<span style="color: green;">The residuals vs. fitted plot is not a nice cloud shape</span>
 
 ####6. W&S Chapter 17-30
 https://whitlockschluter.zoology.ubc.ca/wp-content/data/chapter17/chap17q30NuclearTeeth.csv 
@@ -546,20 +538,9 @@ skimr::skim(nuclear_teeth)
 
 
 
-####Calculating the year of birth of cadavers is a tricky enterprise. One method proposed is based on the radioactivity of the enamel of the body's teeth. The proportion of the radioisotope <sup>14</sup>C in the atmosphere increased dramatically during the era of above ground nuclear bomb testing between 1955 and 1963. Given that the enamel of a tooth is a non-regenerating , measuring the <sup>14</sup>C content of a tooth tells when the tooth developed, and therefore the year of birth of its owner. Predictions based on this method seem quite accurate, as shown in the accompanying graph. he x-axis  A<sup>14</sup>C, which measures the amount of <sup>14</sup>C relative to a standard (as a percentage).
+#### Calculating the year of birth of cadavers is a tricky enterprise. One method proposed is based on the radioactivity of the enamel of the body's teeth. The proportion of the radioisotope <sup>14</sup>C in the atmosphere increased dramatically during the era of above ground nuclear bomb testing between 1955 and 1963. Given that the enamel of a tooth is a non-regenerating , measuring the <sup>14</sup>C content of a tooth tells when the tooth developed, and therefore the year of birth of its owner. Predictions based on this method seem quite accurate, as shown in the accompanying graph. he x-axis  A<sup>14</sup>C, which measures the amount of <sup>14</sup>C relative to a standard (as a percentage).
 
 ####There are three sets of lines on this graph. The solid line represent the least-squares regression line, prediciting the actual year of birth from the estimate based on amount of <sup>14</sup>C. One pair of dashed lines shows the 95% confidence bands and the other shows the 95% prediction interval.
-
-
-
-
-
-
-
-
-
-#### 4d. Using predict() and geom_ribbon() in ggplot2, reproduce the above plot showing data, fit, fit interval, and prediction interval.
-
 
 
 ```{r}
@@ -571,11 +552,11 @@ teeth_lm <- lm(deltaC14 ~ dateOfBirth, data = nuclear_teeth)
 summary(teeth_lm)
 ```
 
-#### 4a. What is the approximate slope of the regression line?
+#### 6a. What is the approximate slope of the regression line?
 
 <span style="color: green;">The slope of the regression line is -16.71.</span>
 
-#### 4b. Which pair of lines shows the confidence bands? What do these confidence bands tell us?
+#### 6b. Which pair of lines shows the confidence bands? What do these confidence bands tell us?
 
 ```{r}
 #generate upper and lower confidence interval
@@ -604,9 +585,9 @@ ggplot(nuclear_teeth,
 
 <span style="color: green;">The confidence interval is shown in orange. These lines show the predicted mean-Y for a given X and a re useful for predicting the general trend of a linear model. These bands will bracket the regression line for 95% of the samples.</span>
 
-#### 4c. What pair of lines show the prediction interval? What do these confidence interval bands tell us?
+#### 6c. What pair of lines show the prediction interval? What do these confidence interval bands tell us?
 
-#### 4d. Using predict() and geom_ribbon() in ggplot2, reproduce the above plot showing data, fit, fit interval, and prediction interval.
+#### 6d. Using predict() and geom_ribbon() in ggplot2, reproduce the above plot showing data, fit, fit interval, and prediction interval.
 
 
 ```{r}
